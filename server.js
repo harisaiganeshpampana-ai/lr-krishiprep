@@ -162,14 +162,39 @@ Rules:
 - Reply in the same language the student used (English, Telugu or Hindi).
 - Only answer agriculture, allied subjects and exam-preparation questions. Politely decline anything else.`;
 
+let groqModel = GROQ_MODEL;
+let groqChecked = false;
+
+// Pick a Groq model this API key can actually use
+async function pickGroqModel() {
+  if (groqChecked) return groqModel;
+  groqChecked = true;
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', { headers: { Authorization: `Bearer ${GROQ_API_KEY}` } });
+    const data = await res.json();
+    const ids = (data.data || []).map((m) => m.id);
+    if (ids.includes(groqModel)) return groqModel;
+    const preferred = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'qwen/qwen3-32b', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant'];
+    const pick = preferred.find((p) => ids.includes(p)) || ids.find((id) => !/whisper|tts|guard|embed|orpheus|playai|compound/i.test(id));
+    if (pick) {
+      groqModel = pick;
+      console.log('Using Groq model:', pick);
+    }
+  } catch (e) {
+    console.error('Groq model check failed:', e.message);
+  }
+  return groqModel;
+}
+
 async function generate(system, user) {
   if (GROQ_API_KEY) {
     try {
+      const model = await pickGroqModel();
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
         body: JSON.stringify({
-          model: GROQ_MODEL,
+          model,
           temperature: 0.3,
           max_tokens: 1200,
           messages: [
