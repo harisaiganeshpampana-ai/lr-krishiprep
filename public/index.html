@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LR KrishiPrep – Agriculture Exam Mock Tests & AI Doubt Solver</title>
+<meta name="description" content="Free and premium mock tests for all agriculture exams – ICAR PG/JRF, IBPS AFO, NABARD, state AO/AEO, BSc and MSc Agriculture – with an AI doubt solver. By LR AgroSense.">
+<style>
+  :root {
+    --green: #1f7a3a;
+    --green-dark: #155c2b;
+    --green-light: #e8f4ec;
+    --text: #1d2420;
+    --muted: #5f6b64;
+    --border: #dfe5e1;
+    --bg: #f7f9f8;
+    --white: #ffffff;
+    --red: #c0392b;
+    --red-light: #fbeceb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.55; }
+  a { color: var(--green); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+
+  header { background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { font-weight: 800; font-size: 20px; color: var(--green); text-decoration: none; }
+  .logo span { color: var(--text); }
+  nav a { margin-left: 18px; text-decoration: none; color: var(--text); font-weight: 500; font-size: 15px; }
+  nav a:hover { color: var(--green); }
+
+  .hero { padding: 48px 0 32px; text-align: center; }
+  .hero h1 { font-size: 32px; line-height: 1.25; margin-bottom: 12px; }
+  .hero p { color: var(--muted); font-size: 17px; max-width: 620px; margin: 0 auto 24px; }
+  .btn { display: inline-block; background: var(--green); color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.outline { background: var(--white); color: var(--green); border: 1px solid var(--green); }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  .hero .btn { margin: 4px; }
+
+  section { padding: 28px 0; }
+  h2 { font-size: 24px; margin-bottom: 14px; }
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
+  select, input, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; background: var(--white); }
+  .row { display: grid; grid-template-columns: 1fr 1fr 140px; gap: 12px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .hidden { display: none !important; }
+
+  .test-bar { display: flex; justify-content: space-between; align-items: center; background: var(--green-light); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-weight: 600; position: sticky; top: 64px; }
+  .q { border-bottom: 1px solid var(--border); padding: 16px 0; }
+  .q:last-child { border-bottom: none; }
+  .q-text { font-weight: 600; margin-bottom: 10px; }
+  .opt { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; font-weight: 400; }
+  .opt input { width: auto; margin-top: 4px; }
+  .opt.correct { background: var(--green-light); border-color: var(--green); }
+  .opt.wrong { background: var(--red-light); border-color: var(--red); }
+  .explain { background: var(--bg); border-left: 3px solid var(--green); padding: 8px 12px; font-size: 14px; margin-top: 6px; border-radius: 4px; }
+  .score { text-align: center; padding: 18px; }
+  .score b { font-size: 40px; color: var(--green); display: block; }
+
+  .chat { display: flex; flex-direction: column; height: 520px; }
+  .messages { flex: 1; overflow-y: auto; padding: 4px; }
+  .msg { padding: 10px 14px; border-radius: 10px; margin-bottom: 10px; max-width: 88%; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.user { background: var(--green); color: #fff; margin-left: auto; }
+  .msg.bot { background: var(--bg); border: 1px solid var(--border); }
+  .msg .src { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .chat-input { display: flex; gap: 8px; margin-top: 10px; }
+  .chat-input textarea { resize: none; height: 48px; }
+
+  .tg { background: var(--green); color: #fff; border-radius: 12px; padding: 24px; text-align: center; }
+  .tg p { opacity: .9; margin-bottom: 14px; }
+  .tg .btn { background: #fff; color: var(--green); }
+
+  footer { text-align: center; padding: 30px 0; color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 26px; }
+    .row { grid-template-columns: 1fr; }
+    nav a { margin-left: 12px; font-size: 14px; }
+    .test-bar { top: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#">LR <span>KrishiPrep</span></a>
+    <nav>
+      <a href="#tests">Mock Tests</a>
+      <a href="#ask">Ask AI</a>
+      <a href="#telegram">Telegram</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Crack every agriculture exam</h1>
+    <p>Mock tests and an AI doubt solver for BSc, MSc and MBA Agriculture students, plus ICAR PG/JRF, IBPS AFO, NABARD, state AO/AEO and other agriculture exams.</p>
+    <a class="btn" href="#tests">Start a free mock test</a>
+    <a class="btn outline" href="#ask">Ask a doubt</a>
+  </div>
+
+  <!-- MOCK TESTS -->
+  <section id="tests">
+    <h2>Mock tests</h2>
+
+    <div id="setup" class="card">
+      <div class="row">
+        <div>
+          <label for="exam">Exam</label>
+          <select id="exam"><option value="">All exams</option></select>
+        </div>
+        <div>
+          <label for="subject">Subject</label>
+          <select id="subject"><option value="">All subjects</option></select>
+        </div>
+        <div>
+          <label for="count">Questions</label>
+          <select id="count">
+            <option>10</option><option selected>20</option><option>50</option><option>100</option>
+          </select>
+        </div>
+      </div>
+      <p class="muted" id="qcount" style="margin-top:10px"></p>
+      <button class="btn" id="startBtn" style="margin-top:14px">Start test</button>
+    </div>
+
+    <div id="testArea" class="card hidden">
+      <div class="test-bar">
+        <span id="progress">0 answered</span>
+        <span id="timer">00:00</span>
+      </div>
+      <div id="questions"></div>
+      <button class="btn" id="submitBtn" style="margin-top:16px">Submit test</button>
+    </div>
+
+    <div id="resultArea" class="card hidden">
+      <div class="score"><b id="scoreText"></b><span class="muted" id="scoreSub"></span></div>
+      <div id="review"></div>
+      <button class="btn" id="againBtn" style="margin-top:16px">Take another test</button>
+    </div>
+  </section>
+
+  <!-- ASK AI -->
+  <section id="ask">
+    <h2>Ask AI – doubt solver</h2>
+    <div class="card chat">
+      <div class="messages" id="messages">
+        <div class="msg bot">Namaste! Ask me any agriculture question – agronomy, soil science, entomology, plant pathology, horticulture, agri economics, extension and more. You can ask in English, Telugu or Hindi.</div>
+      </div>
+      <div class="chat-input">
+        <textarea id="askInput" placeholder="Example: What are the symptoms of blast disease in rice?"></textarea>
+        <button class="btn" id="askBtn">Ask</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELEGRAM -->
+  <section id="telegram">
+    <div class="tg">
+      <h2>Join us on Telegram</h2>
+      <p>Get a free practice question every day and ask doubts to our AI bot right inside Telegram.</p>
+      <a class="btn" id="tgLink" href="#" target="_blank" rel="noopener">Join Telegram channel</a>
+    </div>
+  </section>
+</div>
+
+<footer>
+  © <span id="year"></span> LR KrishiPrep · Developed by LR AgroSense
+</footer>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  let meta = { exams: {} };
+  let current = [];
+  let timerId = null;
+  let secondsLeft = 0;
+
+  $('year').textContent = new Date().getFullYear();
+
+  // ---------- Load exams ----------
+  async function loadMeta() {
+    try {
+      const res = await fetch('/api/meta');
+      meta = await res.json();
+      const examSel = $('exam');
+      Object.keys(meta.exams).sort().forEach((e) => {
+        examSel.insertAdjacentHTML('beforeend', `<option value="${esc(e)}">${esc(e)} (${meta.exams[e].total})</option>`);
+      });
+      fillSubjects();
+      if (meta.channelLink) $('tgLink').href = meta.channelLink;
+      else $('telegram').classList.add('hidden');
+    } catch (e) {
+      $('qcount').textContent = 'Could not load exams. Please refresh.';
+    }
+  }
+
+  function fillSubjects() {
+    const exam = $('exam').value;
+    const subjects = {};
+    Object.entries(meta.exams).forEach(([e, info]) => {
+      if (exam && e !== exam) return;
+      Object.entries(info.subjects).forEach(([s, n]) => { subjects[s] = (subjects[s] || 0) + n; });
+    });
+    $('subject').innerHTML = '<option value="">All subjects</option>' +
+      Object.keys(subjects).sort().map((s) => `<option value="${esc(s)}">${esc(s)} (${subjects[s]})</option>`).join('');
+    const total = Object.values(subjects).reduce((a, b) => a + b, 0);
+    $('qcount').textContent = total ? `${total} questions available` : 'Questions are being added. Please check back soon.';
+  }
+  $('exam').addEventListener('change', fillSubjects);
+
+  // ---------- Test ----------
+  $('startBtn').addEventListener('click', async () => {
+    const params = new URLSearchParams({ exam: $('exam').value, subject: $('subject').value, count: $('count').value });
+    $('startBtn').disabled = true;
+    $('startBtn').textContent = 'Loading...';
+    try {
+      const res = await fetch('/api/test?' + params);
+      const data = await res.json();
+      current = data.questions || [];
+      if (!current.length) { alert('No questions found for this selection yet.'); return; }
+      renderTest();
+    } catch (e) {
+      alert('Could not load the test. Please try again.');
+    } finally {
+      $('startBtn').disabled = false;
+      $('startBtn').textContent = 'Start test';
+    }
+  });
+
+  function renderTest() {
+    $('questions').innerHTML = current.map((q, i) => `
+      <div class="q">
+        <div class="q-text">${i + 1}. ${esc(q.question)}</div>
+        ${q.options.map((o, j) => `
+          <label class="opt"><input type="radio" name="q${i}" value="${j}"> <span><b>${LETTERS[j]}.</b> ${esc(o)}</span></label>
+        `).join('')}
+      </div>`).join('');
+    $('setup').classList.add('hidden');
+    $('resultArea').classList.add('hidden');
+    $('testArea').classList.remove('hidden');
+    updateProgress();
+    secondsLeft = current.length * 60; // 1 minute per question
+    clearInterval(timerId);
+    tick();
+    timerId = setInterval(tick, 1000);
+    $('tests').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function tick() {
+    const m = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+    const s = String(secondsLeft % 60).padStart(2, '0');
+    $('timer').textContent = `⏱ ${m}:${s}`;
+    if (secondsLeft <= 0) { clearInterval(timerId); submitTest(); return; }
+    secondsLeft--;
+  }
+
+  function updateProgress() {
+    const answered = document.querySelectorAll('#questions input:checked').length;
+    $('progress').textContent = `${answered} / ${current.length} answered`;
+  }
+  $('questions').addEventListener('change', updateProgress);
+
+  $('submitBtn').addEventListener('click', () => {
+    const answered = document.querySelectorAll('#questions input:checked').length;
+    if (answered < current.length && !confirm(`You answered ${answered} of ${current.length}. Submit anyway?`)) return;
+    submitTest();
+  });
+
+  async function submitTest() {
+    clearInterval(timerId);
+    const answers = current.map((q, i) => {
+      const picked = document.querySelector(`input[name="q${i}"]:checked`);
+      return { id: q._id, choice: picked ? Number(picked.value) : null };
+    });
+    $('submitBtn').disabled = true;
+    try {
+      const res = await fetch('/api/test/submit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ answers })
+      });
+      const data = await res.json();
+      showResult(data);
+    } catch (e) {
+      alert('Could not submit. Please check your internet and try again.');
+    } finally {
+      $('submitBtn').disabled = false;
+    }
+  }
+
+  function showResult(data) {
+    const pct = data.total ? Math.round((data.correct / data.total) * 100) : 0;
+    $('scoreText').textContent = `${data.correct} / ${data.total}`;
+    $('scoreSub').textContent = `${pct}% · ${pct >= 70 ? 'Excellent work!' : pct >= 40 ? 'Good try – review the explanations below.' : 'Keep practising – read the explanations below.'}`;
+    const byId = new Map(data.results.map((r) => [String(r.id), r]));
+    $('review').innerHTML = current.map((q, i) => {
+      const r = byId.get(String(q._id)) || {};
+      return `
+        <div class="q">
+          <div class="q-text">${i + 1}. ${esc(q.question)}</div>
+          ${q.options.map((o, j) => {
+            let cls = '';
+            if (j === r.answer) cls = 'correct';
+            else if (j === r.choice) cls = 'wrong';
+            return `<div class="opt ${cls}"><span><b>${LETTERS[j]}.</b> ${esc(o)}${j === r.choice ? ' <i>(your answer)</i>' : ''}</span></div>`;
+          }).join('')}
+          ${r.choice === null ? '<div class="muted">Not answered</div>' : ''}
+          ${r.explanation ? `<div class="explain">${esc(r.explanation)}</div>` : ''}
+        </div>`;
+    }).join('');
+    $('testArea').classList.add('hidden');
+    $('resultArea').classList.remove('hidden');
+    $('tests').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  $('againBtn').addEventListener('click', () => {
+    $('resultArea').classList.add('hidden');
+    $('setup').classList.remove('hidden');
+  });
+
+  // ---------- Ask AI ----------
+  function formatAnswer(text) {
+    return esc(text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*(.+)$/gm, '<b>$1</b>');
+  }
+
+  function addMsg(html, who) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + who;
+    div.innerHTML = html;
+    $('messages').appendChild(div);
+    $('messages').scrollTop = $('messages').scrollHeight;
+    return div;
+  }
+
+  async function ask() {
+    const question = $('askInput').value.trim();
+    if (!question) return;
+    $('askInput').value = '';
+    addMsg(esc(question), 'user');
+    const wait = addMsg('Thinking...', 'bot');
+    $('askBtn').disabled = true;
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      if (!res.ok) { wait.textContent = data.error || 'Something went wrong.'; return; }
+      wait.innerHTML = formatAnswer(data.answer) +
+        (data.sources && data.sources.length ? `<div class="src">Sources: ${data.sources.map(esc).join(', ')}</div>` : '');
+    } catch (e) {
+      wait.textContent = 'Could not reach the server. Please try again.';
+    } finally {
+      $('askBtn').disabled = false;
+      $('messages').scrollTop = $('messages').scrollHeight;
+    }
+  }
+  $('askBtn').addEventListener('click', ask);
+  $('askInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); }
+  });
+
+  loadMeta();
+</script>
+</body>
+</html>
