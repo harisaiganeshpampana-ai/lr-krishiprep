@@ -25,10 +25,15 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/api', (req, res, next) => {
+  if (!dbReady) return res.status(503).json({ error: 'The site is starting up or the database is not connected yet. Please try again in a minute.' });
+  next();
+});
 
 // ---------- Database ----------
 let Questions, Chunks;
 let chunkCache = null;
+let dbReady = false;
 
 async function connectDb() {
   const client = new MongoClient(MONGODB_URI);
@@ -451,21 +456,39 @@ if (TG_PATH) {
 }
 
 // ---------- Start ----------
-connectDb()
-  .then(async () => {
-    app.listen(PORT, () => console.log('LR KrishiPrep running on port ' + PORT));
-    if (TG_PATH && PUBLIC_URL) {
-      await tg('setWebhook', { url: PUBLIC_URL.replace(/\/$/, '') + TG_PATH, allowed_updates: ['message'] });
-      await tg('setMyCommands', {
-        commands: [
-          { command: 'quiz', description: 'Get a practice question' },
-          { command: 'help', description: 'How to use this bot' }
-        ]
-      });
-      console.log('Telegram bot connected');
-    }
-  })
-  .catch((e) => {
-    console.error('Database connection failed:', e.message);
-    process.exit(1);
-  });
+// The website opens even if the database is not ready yet; it keeps retrying.
+app.listen(PORT, () => console.log('LR KrishiPrep running on port ' + PORT));
+
+async function startDb() {
+  if (!MONGODB_URI) {
+    console.error('MONGODB_URI is not set. Add it in Render > Environment.');
+    return;
+  }
+  try {
+    await connectDb();
+    dbReady = true;
+    console.log('Database connected');
+  } catch (e) {
+    console.error('Database connection failed:', e.message, '- retrying in 30 seconds');
+    setTimeout(startDb, 30000);
+  }
+}
+
+async function startTelegram() {
+  if (!TG_PATH || !PUBLIC_URL) return;
+  try {
+    await tg('setWebhook', { url: PUBLIC_URL.replace(/\/$/, '') + TG_PATH, allowed_updates: ['message'] });
+    await tg('setMyCommands', {
+      commands: [
+        { command: 'quiz', description: 'Get a practice question' },
+        { command: 'help', description: 'How to use this bot' }
+      ]
+    });
+    console.log('Telegram bot connected');
+  } catch (e) {
+    console.error('Telegram setup failed:', e.message);
+  }
+}
+
+startDb();
+startTelegram();
