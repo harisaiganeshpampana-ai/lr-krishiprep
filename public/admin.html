@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>LR KrishiPrep – Admin</title>
+<style>
+  :root { --green: #1f7a3a; --green-dark: #155c2b; --green-light: #e8f4ec; --text: #1d2420; --muted: #5f6b64; --border: #dfe5e1; --bg: #f7f9f8; --red: #c0392b; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); line-height: 1.5; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 24px; margin-bottom: 4px; color: var(--green); }
+  h2 { font-size: 19px; margin-bottom: 10px; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 18px; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 6px; }
+  input, textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; }
+  textarea { min-height: 220px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .btn { background: var(--green); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.red { background: var(--red); }
+  .btn:disabled { opacity: .6; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .msg { margin-top: 10px; font-size: 14px; white-space: pre-wrap; }
+  .ok { color: var(--green); } .err { color: var(--red); }
+  pre { background: var(--bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; overflow-x: auto; white-space: pre-wrap; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  td, th { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+  .hidden { display: none; }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>LR KrishiPrep – Admin</h1>
+  <p class="muted">Add questions, add study notes for the AI, and post quizzes to Telegram.</p>
+
+  <div class="card" id="loginCard">
+    <h2>Login</h2>
+    <label for="pw">Admin password</label>
+    <input type="password" id="pw">
+    <button class="btn" id="loginBtn">Login</button>
+    <div class="msg err" id="loginMsg"></div>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="card">
+      <h2>Overview</h2>
+      <div id="stats" class="muted">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>1. Add questions</h2>
+      <div class="row">
+        <div>
+          <label for="qExam">Exam</label>
+          <input id="qExam" list="examList" placeholder="e.g. IBPS AFO, ICAR PG, BSc Agri, NABARD">
+          <datalist id="examList"></datalist>
+        </div>
+        <div>
+          <label for="qSubject">Subject</label>
+          <input id="qSubject" list="subjectList" placeholder="e.g. Agronomy, Soil Science">
+          <datalist id="subjectList">
+            <option>Agronomy</option><option>Soil Science</option><option>Entomology</option>
+            <option>Plant Pathology</option><option>Horticulture</option><option>Genetics & Plant Breeding</option>
+            <option>Agricultural Economics</option><option>Agricultural Extension</option><option>Agricultural Engineering</option>
+            <option>Animal Husbandry</option><option>Agri-business Management</option><option>Current Affairs (Agri)</option>
+          </datalist>
+        </div>
+      </div>
+      <label for="qText">Questions (paste in this format)</label>
+      <textarea id="qText" placeholder="Q: Blast disease of rice is caused by?
+A) Xanthomonas oryzae
+B) Magnaporthe oryzae
+C) Rhizoctonia solani
+D) Ustilaginoidea virens
+Answer: B
+Explanation: Rice blast is a fungal disease caused by Magnaporthe oryzae (Pyricularia oryzae).
+
+Q: Next question...
+"></textarea>
+      <button class="btn" id="addQBtn">Add questions</button>
+      <div class="msg" id="qMsg"></div>
+      <details style="margin-top:14px">
+        <summary class="muted" style="cursor:pointer">Prompt to make questions with AI (copy this)</summary>
+        <pre>Make 25 multiple-choice questions for the [EXAM NAME] exam on the subject [SUBJECT].
+Use exam-level difficulty and standard Indian agriculture textbooks (ICAR syllabus).
+Use exactly this format for every question, with a blank line between questions:
+
+Q: question text
+A) option
+B) option
+C) option
+D) option
+Answer: letter
+Explanation: one or two lines explaining the correct answer</pre>
+        <p class="muted">Always check every answer yourself before adding. One wrong answer makes students stop trusting the site.</p>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>2. Add study notes for the AI</h2>
+      <p class="muted">Paste text from your own notes or freely available material. The AI will answer students' doubts from these notes. For a PDF, open it, select all text, copy and paste here.</p>
+      <label for="nSource">Source name (shown to students)</label>
+      <input id="nSource" placeholder="e.g. Rice diseases notes – Plant Pathology">
+      <label for="nText">Notes text</label>
+      <textarea id="nText"></textarea>
+      <button class="btn" id="addNBtn">Add notes</button>
+      <div class="msg" id="nMsg"></div>
+      <h2 style="margin-top:20px">Notes already added</h2>
+      <div id="sources" class="muted">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>3. Post a quiz to the Telegram channel</h2>
+      <label for="tExam">Exam (leave empty for any exam)</label>
+      <input id="tExam" list="examList">
+      <button class="btn" id="postBtn">Post a random question now</button>
+      <div class="msg" id="tMsg"></div>
+    </div>
+
+    <div class="card">
+      <h2>4. Delete questions</h2>
+      <div class="row">
+        <div><label for="dExam">Exam</label><input id="dExam" list="examList"></div>
+        <div><label for="dSubject">Subject (empty = whole exam)</label><input id="dSubject"></div>
+      </div>
+      <button class="btn red" id="delQBtn">Delete these questions</button>
+      <div class="msg" id="dMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let password = '';
+  try { password = sessionStorage.getItem('krishiAdmin') || ''; } catch (e) {}
+
+  async function api(url, method = 'GET', body) {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+
+  function show(el, text, ok) {
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+    el.textContent = text;
+  }
+
+  async function login() {
+    try {
+      await refresh();
+      try { sessionStorage.setItem('krishiAdmin', password); } catch (e) {}
+      $('loginCard').classList.add('hidden');
+      $('panel').classList.remove('hidden');
+    } catch (e) {
+      $('loginMsg').textContent = e.message;
+    }
+  }
+
+  async function refresh() {
+    const s = await api('/api/admin/stats');
+    const meta = await (await fetch('/api/meta')).json();
+    const exams = Object.entries(meta.exams);
+    $('stats').innerHTML = `<b>${s.questions}</b> questions · <b>${s.sources.length}</b> note sources` +
+      (exams.length ? '<table><tr><th>Exam</th><th>Questions</th><th>Subjects</th></tr>' +
+        exams.map(([e, i]) => `<tr><td>${esc(e)}</td><td>${i.total}</td><td>${Object.entries(i.subjects).map(([sub, n]) => esc(sub) + ' (' + n + ')').join(', ')}</td></tr>`).join('') +
+        '</table>' : '');
+    $('examList').innerHTML = exams.map(([e]) => `<option value="${esc(e)}">`).join('');
+    $('sources').innerHTML = s.sources.length
+      ? '<table><tr><th>Source</th><th>Pieces</th><th></th></tr>' + s.sources.map((x) =>
+          `<tr><td>${esc(x.source)}</td><td>${x.chunks}</td><td><button class="btn red" style="margin:0;padding:4px 10px;font-size:13px" data-src="${esc(x.source)}">Delete</button></td></tr>`).join('') + '</table>'
+      : 'No notes yet.';
+  }
+
+  $('loginBtn').addEventListener('click', () => { password = $('pw').value; login(); });
+  $('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') { password = $('pw').value; login(); } });
+  if (password) login();
+
+  $('addQBtn').addEventListener('click', async () => {
+    const btn = $('addQBtn'); btn.disabled = true;
+    try {
+      const r = await api('/api/admin/questions', 'POST', { exam: $('qExam').value, subject: $('qSubject').value, text: $('qText').value });
+      let text = `Added ${r.added} questions.`;
+      if (r.skipped.length) text += `\nSkipped ${r.skipped.length} (check format – need Q:, A) B) C) D) and Answer:):\n- ` + r.skipped.join('\n- ');
+      show($('qMsg'), text, r.added > 0);
+      if (r.added && !r.skipped.length) $('qText').value = '';
+      refresh();
+    } catch (e) { show($('qMsg'), e.message, false); }
+    btn.disabled = false;
+  });
+
+  $('addNBtn').addEventListener('click', async () => {
+    const btn = $('addNBtn'); btn.disabled = true; btn.textContent = 'Adding... (can take a minute)';
+    try {
+      const r = await api('/api/admin/notes', 'POST', { source: $('nSource').value, text: $('nText').value });
+      show($('nMsg'), `Added ${r.added} pieces. The AI can now use these notes.`, true);
+      $('nText').value = '';
+      refresh();
+    } catch (e) { show($('nMsg'), e.message, false); }
+    btn.disabled = false; btn.textContent = 'Add notes';
+  });
+
+  $('sources').addEventListener('click', async (e) => {
+    const src = e.target.dataset && e.target.dataset.src;
+    if (!src || !confirm(`Delete all notes from "${src}"?`)) return;
+    try { await api('/api/admin/notes?source=' + encodeURIComponent(src), 'DELETE'); refresh(); }
+    catch (err) { alert(err.message); }
+  });
+
+  $('postBtn').addEventListener('click', async () => {
+    try {
+      const r = await api('/api/admin/post-to-channel', 'POST', { exam: $('tExam').value });
+      show($('tMsg'), r.ok ? 'Posted: ' + r.question : 'Failed: ' + r.error, r.ok);
+    } catch (e) { show($('tMsg'), e.message, false); }
+  });
+
+  $('delQBtn').addEventListener('click', async () => {
+    const exam = $('dExam').value.trim(), subject = $('dSubject').value.trim();
+    if (!exam) return show($('dMsg'), 'Type the exam name.', false);
+    if (!confirm(`Delete questions for ${exam}${subject ? ' – ' + subject : ' (ALL subjects)'}? This cannot be undone.`)) return;
+    try {
+      const r = await api(`/api/admin/questions?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}`, 'DELETE');
+      show($('dMsg'), `Deleted ${r.deleted} questions.`, true);
+      refresh();
+    } catch (e) { show($('dMsg'), e.message, false); }
+  });
+</script>
+</body>
+</html>
