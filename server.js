@@ -15,6 +15,10 @@ const {
   TELEGRAM_CHANNEL_ID, // example: @lrkrishiprep
   CRON_KEY,
   PUBLIC_URL, // example: https://lr-krishiprep.onrender.com
+  RAZORPAY_KEY_ID,
+  RAZORPAY_KEY_SECRET,
+  PREMIUM_PRICE = '149', // rupees per 30 days
+  FREE_DAILY_LIMIT = '5', // free AI doubts per day in the Telegram bot
   GROQ_MODEL = 'llama-3.3-70b-versatile',
   GEMINI_MODEL = 'gemini-2.5-flash',
   EMBED_MODEL = 'gemini-embedding-001',
@@ -31,7 +35,7 @@ app.use('/api', (req, res, next) => {
 });
 
 // ---------- Database ----------
-let Questions, Chunks;
+let Questions, Chunks, Users;
 let chunkCache = null;
 let dbReady = false;
 
@@ -41,8 +45,10 @@ async function connectDb() {
   const db = client.db('krishiprep');
   Questions = db.collection('questions');
   Chunks = db.collection('chunks');
+  Users = db.collection('users');
   await Questions.createIndex({ exam: 1, subject: 1 });
   await Chunks.createIndex({ source: 1 });
+  await Users.createIndex({ tgId: 1 }, { unique: true });
 }
 
 // ---------- Helpers ----------
@@ -159,7 +165,8 @@ async function retrieve(question, k = 5) {
 const SYSTEM_PROMPT = `You are LR KrishiPrep AI, a tutor for agriculture students (BSc Agriculture, MSc Agriculture, MBA Agri-business) and for all agriculture exams (ICAR PG/JRF/SRF, IBPS AFO, NABARD, state Agriculture Officer/AEO, FCI, university and other exams). You were developed by LR AgroSense.
 Rules:
 - Explain clearly and simply in short points, with the key facts students need for exams (scientific names, numbers, definitions).
-- Reply in the same language the student used (English, Telugu or Hindi).- Students often use local names for crop diseases, pests and practices. Always read the question in its agricultural meaning. For example, in Telugu 'అగ్గి తెగులు' means rice blast disease (caused by the fungus Magnaporthe oryzae), not a fire; 'తెగులు' means a plant disease; 'పురుగు' means an insect pest. If a term is unclear, state your interpretation in one line first.
+- Reply in the same language the student used (English, Telugu or Hindi).
+- Students often use local names for crop diseases, pests and practices. Always read the question in its agricultural meaning. For example, in Telugu 'అగ్గి తెగులు' means rice blast disease (caused by the fungus Magnaporthe oryzae), not a fire; 'తెగులు' means a plant disease; 'పురుగు' means an insect pest. If a term is unclear, state your interpretation in one line first.
 - Keep answers short and clear. Never repeat the same word or line.
 - Only answer agriculture, allied subjects and exam-preparation questions. Politely decline anything else.`;
 
@@ -432,6 +439,95 @@ async function postDailyQuestion(exam) {
   return r.ok ? { ok: true, question: q.question } : { ok: false, error: r.description };
 }
 
+// ---------- Premium (Razorpay payment link) ----------
+const DAY = 24 * 60 * 60 * 1000;
+const todayIST = () => new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+
+async function getUser(tgId) {
+  return (await Users.findOne({ tgId: String(tgId) })) || { tgId: String(tgId) };
+}
+const isPremium = (u) => u.premiumUntil && new Date(u.premiumUntil) > new Date();
+
+// Counts one AI doubt for a free user. Returns false if today's free limit is used up.
+async function useFreeDoubt(tgId) {
+  const today = todayIST();
+  const u = await getUser(tgId);
+  const used = u.usageDate === today ? u.usageCount || 0 : 0;
+  if (used >= Number(FREE_DAILY_LIMIT)) return false;
+  await Users.updateOne({ tgId: String(tgId) }, { $set: { usageDate: today, usageCount: used + 1 } }, { upsert: true });
+  return true;
+}
+
+async function razorpay(method, urlPath, body) {
+  const auth = Buffer.from(RAZORPAY_KEY_ID + ':' + RAZORPAY_KEY_SECRET).toString('base64');
+  const res = await fetch('https://api.razorpay.com/v1' + urlPath, {
+    method,
+    headers: { Authorization: 'Basic ' + auth, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error((data.error && data.error.description) || 'Razorpay error');
+  return data;
+}
+
+async function createPaymentLink(tgId, name) {
+  return razorpay('POST', '/payment_links', {
+    amount: Number(PREMIUM_PRICE) * 100,
+    currency: 'INR',
+    description: 'LR KrishiPrep Premium - 30 days',
+    customer: { name: String(name || 'Telegram user').slice(0, 50) },
+    notes: { tg_id: String(tgId) },
+    callback_url: PUBLIC_URL.replace(/\/$/, '') + '/payment/done',
+    callback_method: 'get',
+    expire_by: Math.floor(Date.now() / 1000) + 24 * 60 * 60
+  });
+}
+
+// Gives 30 days of premium for a paid link (only once per link).
+async function activatePremium(linkId) {
+  const link = await razorpay('GET', '/payment_links/' + encodeURIComponent(linkId));
+  if (link.status !== 'paid') return { ok: false, reason: 'Payment not completed yet.' };
+  const tgId = link.notes && link.notes.tg_id;
+  if (!tgId) return { ok: false, reason: 'Payment is not linked to a Telegram user.' };
+  const u = await getUser(tgId);
+  if ((u.paidLinks || []).includes(link.id)) return { ok: true, tgId, until: u.premiumUntil, already: true };
+  const start = isPremium(u) ? new Date(u.premiumUntil).getTime() : Date.now();
+  const until = new Date(start + 30 * DAY);
+  await Users.updateOne(
+    { tgId: String(tgId) },
+    { $set: { premiumUntil: until }, $push: { paidLinks: link.id } },
+    { upsert: true }
+  );
+  if (TELEGRAM_BOT_TOKEN) {
+    await tg('sendMessage', {
+      chat_id: tgId,
+      text: `Payment received. Thank you!\n\nYou are now a Premium member until ${fmtDate(until)}.\nAsk unlimited doubts any time.`
+    });
+  }
+  return { ok: true, tgId, until };
+}
+
+function resultPage(title, message, ok) {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title}</title></head><body style="font-family:system-ui,sans-serif;background:#eef6f0;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:16px">
+<div style="background:#fff;max-width:420px;width:100%;border-radius:16px;padding:28px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.08)">
+<div style="font-size:48px">${ok ? '✅' : '⚠️'}</div><h2 style="color:#1f7a3a;margin:8px 0">${title}</h2>
+<p style="color:#333;line-height:1.5">${message}</p>
+<p style="color:#777;font-size:14px">You can close this page and go back to Telegram.</p></div></body></html>`;
+}
+
+// Razorpay sends the buyer here after payment.
+app.get('/payment/done', wrap(async (req, res) => {
+  const linkId = String(req.query.razorpay_payment_link_id || '');
+  if (!dbReady || !RAZORPAY_KEY_ID || !linkId) {
+    return res.status(400).send(resultPage('Something went wrong', 'Payment details are missing. If money was taken, send /status to the bot or contact us.', false));
+  }
+  const r = await activatePremium(linkId);
+  if (!r.ok) return res.send(resultPage('Payment not confirmed', r.reason + ' If money was taken, it will be checked soon.', false));
+  res.send(resultPage('Premium activated', `Your LR KrishiPrep Premium is active until <b>${fmtDate(r.until)}</b>.`, true));
+}));
+
 function cleanForTelegram(text) {
   return text.replace(/\*\*/g, '').replace(/^#+\s*/gm, '');
 }
@@ -449,6 +545,9 @@ async function handleTelegram(update) {
         'Welcome to LR KrishiPrep by LR AgroSense!\n\n' +
         '• Send me any agriculture question (English, Telugu or Hindi).\n' +
         '• /quiz - get a practice question\n' +
+        `• Free: ${FREE_DAILY_LIMIT} AI doubts per day\n` +
+        `• /premium - unlimited AI doubts for ₹${PREMIUM_PRICE}/month\n` +
+        '• /status - see your plan\n' +
         (PUBLIC_URL ? `• Full mock tests: ${PUBLIC_URL}` : '')
     });
   }
@@ -459,7 +558,44 @@ async function handleTelegram(update) {
     return sendQuizPoll(chatId, q);
   }
 
-  if (!rateLimit('tg:' + chatId, 20)) {
+  if (text.startsWith('/premium')) {
+    const u = await getUser(chatId);
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET || !PUBLIC_URL) {
+      return tg('sendMessage', { chat_id: chatId, text: 'Premium payments will open soon. Please check back later!' });
+    }
+    const link = await createPaymentLink(chatId, msg.from && msg.from.first_name);
+    return tg('sendMessage', {
+      chat_id: chatId,
+      text:
+        'LR KrishiPrep Premium - ₹' + PREMIUM_PRICE + ' for 30 days\n\n' +
+        '✔ Unlimited AI doubts (English, Telugu, Hindi)\n' +
+        '✔ Priority answers for all agriculture exams\n\n' +
+        (isPremium(u) ? `You are already premium until ${fmtDate(u.premiumUntil)}. Paying again adds 30 more days.\n\n` : '') +
+        'Pay with UPI, card or net banking (link valid for 24 hours). Premium starts automatically after payment.',
+      reply_markup: { inline_keyboard: [[{ text: `Pay ₹${PREMIUM_PRICE}`, url: link.short_url }]] }
+    });
+  }
+
+  if (text.startsWith('/status')) {
+    const u = await getUser(chatId);
+    const used = u.usageDate === todayIST() ? u.usageCount || 0 : 0;
+    return tg('sendMessage', {
+      chat_id: chatId,
+      text: isPremium(u)
+        ? `Plan: Premium ✅\nValid until: ${fmtDate(u.premiumUntil)}\nAI doubts: unlimited`
+        : `Plan: Free\nAI doubts used today: ${used}/${FREE_DAILY_LIMIT}\n\nSend /premium for unlimited doubts at ₹${PREMIUM_PRICE}/month.`
+    });
+  }
+
+  const user = await getUser(chatId);
+  if (!isPremium(user) && !(await useFreeDoubt(chatId))) {
+    return tg('sendMessage', {
+      chat_id: chatId,
+      text: `You have used your ${FREE_DAILY_LIMIT} free AI doubts for today. They reset at midnight.\n\nGet unlimited doubts for ₹${PREMIUM_PRICE}/month - send /premium`
+    });
+  }
+
+  if (!rateLimit('tg:' + chatId, isPremium(user) ? 60 : 20)) {
     return tg('sendMessage', { chat_id: chatId, text: 'You have reached the hourly limit. Please try again later.' });
   }
   await tg('sendChatAction', { chat_id: chatId, action: 'typing' });
@@ -507,6 +643,8 @@ async function startTelegram() {
     await tg('setMyCommands', {
       commands: [
         { command: 'quiz', description: 'Get a practice question' },
+        { command: 'premium', description: 'Unlimited AI doubts - ₹' + PREMIUM_PRICE + '/month' },
+        { command: 'status', description: 'See your plan and free doubts left' },
         { command: 'help', description: 'How to use this bot' }
       ]
     });
